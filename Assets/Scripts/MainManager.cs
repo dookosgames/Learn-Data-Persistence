@@ -1,5 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
+
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -11,17 +11,36 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text HighScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
+    private bool highScoreWon = false;
 
-    
+
+    //player info
+    [SerializeField] GameObject highScorePanel;
+    [SerializeField] TMP_InputField nameInput;
+
+
     // Start is called before the first frame update
     void Start()
     {
+        //Get High Score Data
+        if (SaveData.Instance.highScoreName != "")
+        {
+            HighScoreText.text =SaveData.Instance.highScoreName+ " has the high score: " + SaveData.Instance.highScore;
+        }
+        else
+        {
+            HighScoreText.text = "";
+        }
+
+
+       
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -56,11 +75,42 @@ public class MainManager : MonoBehaviour
         else if (m_GameOver)
         {
             
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (Input.GetKeyDown(KeyCode.Space) && !highScoreWon)
             {
+                SaveData.Instance.LoadSave();
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
+            else if(Input.GetKeyDown(KeyCode.Return) && highScoreWon)
+            {
+
+                //Get name from player
+                if (GetPlayerInfo())
+                {
+                    SaveData.Instance.LoadSave();
+                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                }
+
+
+               
+            }
         }
+    }
+
+    private bool GetPlayerInfo()
+    {
+        if (nameInput.text != "")
+        {
+
+            SaveData.Instance.inputName = nameInput.text;
+            SaveData.Instance.Save(nameInput.text, m_Points);
+
+            return true;
+        }
+        else
+        {
+            Debug.Log("Need Name");
+        }
+        return false;
     }
 
     void AddPoint(int point)
@@ -69,12 +119,26 @@ public class MainManager : MonoBehaviour
         ScoreText.text = $"Score : {m_Points}";
 
 
-        //Check High Score and Save
+        //Check High Score, update and Save
+        if (m_Points > SaveData.Instance.highScore)
+        {  
+            highScoreWon = true;
+        }
+        
     }
 
     public void GameOver()
     {
         m_GameOver = true;
-        GameOverText.SetActive(true);
+
+        if (highScoreWon)
+        {
+            highScorePanel.SetActive(true);
+        }
+        else
+        {   
+            GameOverText.SetActive(true);
+        }
+        
     }
 }
